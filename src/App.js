@@ -89,7 +89,7 @@ function computeValue(leftOperand, rightOperand, operator) {
 
 const initialState = {
     operator: null,
-    value: 0,
+    value: null,
     displayValue: '0',
     waitingForOperand: true
 };
@@ -97,7 +97,14 @@ const initialState = {
 function calculatorReducer(state, action) {
     switch (action.type) {
         case 'SELECT_DIGIT': {
-            const { displayValue } = state;
+            const { displayValue, waitingForOperand } = state;
+            if (waitingForOperand) {
+                return {
+                    ...state,
+                    displayValue: Number(action.digit).toString(),
+                    waitingForOperand: false
+                };
+            }
             return {
                 ...state,
                 displayValue: Number(displayValue + action.digit).toString()
@@ -117,25 +124,38 @@ function calculatorReducer(state, action) {
                     operator: action.operator
                 };
             }
+            if (value === null) {
+                return {
+                    ...state,
+                    operator: action.operator,
+                    value: Number(displayValue),
+                    waitingForOperand: true
+                };
+            }
             const newValue = computeValue(value, Number(displayValue), operator);
             return {
                 ...state,
                 operator: action.operator,
-                value: newValue
+                value: newValue,
+                displayValue: newValue.toString(),
+                waitingForOperand: true
             };
         }
         case 'COMPUTE_VALUE': {
             const { value, displayValue, operator } = state;
+            const newValue = computeValue(value, Number(displayValue), operator);
             return {
                 ...state,
-                value: computeValue(value, Number(displayValue), operator)
+                value: newValue,
+                displayValue: newValue.toString(),
+                waitingForOperand: true
             };
         }
         case 'CLEAR_DIGIT': {
             const { displayValue } = state;
             return {
                 ...state,
-                displayValue: displayValue.slice(0, displayValue - 1)
+                displayValue: displayValue.slice(0, displayValue.length - 1)
             };
         }
         case 'CLEAR_ALL': {
